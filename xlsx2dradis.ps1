@@ -32,6 +32,7 @@ $headers = @{
 
 $hosts = @()
 $issues = Import-Excel $File -WorksheetName "Issues"
+$uploaded = @()
 
 # Lista los hosts en el excel
 foreach ($issue in $issues) {
@@ -62,16 +63,17 @@ foreach ($ip_add in $hosts) {
     $response = Invoke-RestMethod -Method Post -Uri $url$api$endpoint -Headers $headers -Body $encoded -ContentType "application/json"
     $nodeId = $response[0].id
 
+    $counter = 0
     foreach ($issue in $issues) {
 
-        # Agrega los issues de cada host
+        # Agrega los issues de cada host        
 
-        if ($ip_add -eq $issue.Host){
+        if (($ip_add -eq $issue.Host) -And -not ($uploaded -contains $counter)){
 
             $endpoint = '/issues'
 
             $text = @{
-                text = -join("#[Title]#`r`n", $issue.Vulnerabilidad, "`r`n`r`n#[CVSSv3.BaseScore]#`r`n", $issue.CVSSv3 ,"`r`n`r`n#[CVSSv3Vector]#`r`n", $issue.Vector, "`r`n`r`n#[Type]#`r`n", $issue.Tipo, "`r`n`r`n#[Description]#`r`n", $issue.Descripcion, "`r`n`r`n#[Solution]#`r`n", $issue.Recomendacion, "`r`n`r`n#[References]#`r`n", "N/A", "`r`n`r`n#[Category]#`r`n", "N/A", "`r`n`r`n#[Access]#`r`n", "Remoto", "`r`n`r`n#[Risk]#`r`n", $issue.Criticidad, "`r`n`r`n#[CWE]#`r`n", $issue.CWE, "`r`n`r`n#[CAPEC]#`r`n", $issue.CAPEC, "`r`n`r`n#[OWASP]#`r`n", $issue.OWASP, "`r`n`r`n#[DescriptionShort]#`r`n", "N/A", "`r`n`r`n#[Impact]#`r`n", $issue.Impacto, "`r`n`r`n#[Likelihood]#`r`n", "N/A", "`r`n`r`n#[Remediation]#`r`n", $issue.Recomendacion, "`r`n`r`n#[Enhancement]#`r`n", "N/A", "`r`n`r`n#[Tier]#`r`n", "N/A", "`r`n`r`n#[Ease]#`r`n", "N/A", "`r`n`r`n#[Magnitude]#`r`n", "N/A", "`r`n`r`n#[plugin_id]#`r`n", $issue.ID)
+                text = -join("#[Title]#`r`n", $issue.Vulnerabilidad, "`r`n`r`n#[CVSSv3.BaseScore]#`r`n", $issue.CVSSv3 ,"`r`n`r`n#[CVSSv3Vector]#`r`n", $issue.Vector, "`r`n`r`n#[Type]#`r`n", $issue.Tipo, "`r`n`r`n#[Description]#`r`n", $issue.Descripcion, "`r`n`r`n#[References]#`r`n", "N/A", "`r`n`r`n#[Category]#`r`n", "N/A", "`r`n`r`n#[Access]#`r`n", "Remoto", "`r`n`r`n#[Risk]#`r`n", $issue.Criticidad, "`r`n`r`n#[CWE]#`r`n", $issue.CWE, "`r`n`r`n#[CAPEC]#`r`n", $issue.CAPEC, "`r`n`r`n#[OWASP]#`r`n", $issue.OWASP, "`r`n`r`n#[DescriptionShort]#`r`n", "N/A", "`r`n`r`n#[Impact]#`r`n", $issue.Impacto, "`r`n`r`n#[Likelihood]#`r`n", "N/A", "`r`n`r`n#[Remediation]#`r`n", $issue.Recomendacion, "`r`n`r`n#[Enhancement]#`r`n", "N/A", "`r`n`r`n#[Tier]#`r`n", "N/A", "`r`n`r`n#[Ease]#`r`n", "N/A", "`r`n`r`n#[Magnitude]#`r`n", "N/A", "`r`n`r`n#[plugin_id]#`r`n", $issue.ID)
             }
 
             $body = @{
@@ -84,10 +86,10 @@ foreach ($ip_add in $hosts) {
             $issueId = $response[0].id
 
             # Agrega la ubicacion de cada issue con el mismo ID
-
+            $internal_counter = 0
             foreach ($vuln in $issues) {
 
-                if ($vuln.ID -eq $issue.ID){
+                if (($vuln.ID -eq $issue.ID) -And ($vuln.Host -eq $ip_add)){
 
                     $endpoint = -join('/nodes/', $nodeId, "/evidence")
 
@@ -103,8 +105,11 @@ foreach ($ip_add in $hosts) {
                     $json = $body | ConvertTo-Json
                     $encoded = [System.Text.Encoding]::UTF8.GetBytes($json)
                     $response = Invoke-RestMethod -Method Post -Uri $url$api$endpoint -Headers $headers -Body $encoded -ContentType "application/json"
+                    $uploaded += $internal_counter
                 }
+                $internal_counter++
             }
         }
+        $counter++
     }
 }

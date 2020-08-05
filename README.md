@@ -6,7 +6,8 @@ Install-Module ImportExcel -scope CurrentUser
 
 # Instrucciones
 
-* Agrupar ubicación usando mismo ID y Host vacío.
+* Asignar un ID númerico a cada vulnerabilidad.
+* Agrupar ubicaciones usando mismo ID y Host.
 
 # ToDo
 
